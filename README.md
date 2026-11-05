@@ -49,6 +49,7 @@ Where speech recognition isn't available, the app detects this on load and tells
 - **Semantic HTML underneath the voice layer**: real `<fieldset>`/`<legend>`, labelled inputs, and a logical heading and tab order, so the fallback path is genuinely accessible on its own, not just present.
 - **Explicit privacy disclosure** before any listening starts: audio is processed transiently in the browser to produce text, never recorded or sent anywhere by this site.
 - **Section earcons**, not just more speech, to convey structure with less listening effort.
+- **Focus follows the content.** Keyboard and screen-reader focus moves to each new question, to the first option when a required answer is missing, and to the heading of the summary and thank-you screens. It never stays on a button that was just hidden.
 
 ## Pilot testing
 
@@ -72,19 +73,30 @@ survey-data.js    — the 16 questions, their type, options, and branching condi
 voice-parsing.js  — turns a transcript into an option or a voice command (pure functions, unit tested)
 app.js            — speech synthesis/recognition, state machine, fallback rendering
 test/             — Node unit tests for voice-parsing.js and the branching in survey-data.js
+e2e/              — browser tests: axe-core, focus, form and voice paths
 ```
 
 No build step, no runtime dependencies, no backend. Answers exist only in the browser tab for the session (optionally mirrored to `localStorage` under the key `accessgo_survey_response_demo` for demo persistence); nothing is transmitted anywhere.
 
 ## Running the tests
 
-Needs Node.js 20 or later. There's nothing to install.
+Needs Node.js 20 or later. The unit tests need nothing installed:
 
 ```bash
 npm test
 ```
 
-The tests check that every option of every question can be selected by saying its own words or its number. They also cover a set of known-tricky phrases ("no" vs "Prefer not to say", "agree" vs "disagree", "one to two days a week" vs option one), voice commands inside free-text answers, and the Q7→Q8 and Q13→Q14/Q15 branching. CI runs them on every pull request.
+End-to-end checks run in headless Chromium. They need a one-time install:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+They run axe-core (WCAG 2.1 A/AA + best practice) on every screen, check where keyboard focus lands after each step, walk the form path including a branching change, and drive the voice path with the Web Speech API stubbed out.
+
+The unit tests check that every option of every question can be selected by saying its own words or its number. They also cover a set of known-tricky phrases ("no" vs "Prefer not to say", "agree" vs "disagree", "one to two days a week" vs option one), voice commands inside free-text answers, and the Q7→Q8 and Q13→Q14/Q15 branching. CI runs both suites on every pull request.
 
 ## Limitations
 

@@ -243,7 +243,7 @@
     <form id="question-form">
       <div class="card">
         <span class="section-label" id="question-section-label">Section 1</span>
-        <p class="question-text" id="question-text"></p>
+        <p class="question-text" id="question-text" tabindex="-1"></p>
         <div id="question-body"></div>
       </div>
       <div class="btn-row">
@@ -255,7 +255,7 @@
 
   <!-- SUMMARY / SUBMIT SCREEN -->
   <section id="screen-summary" class="summary-panel" hidden aria-labelledby="summary-heading">
-    <h1 id="summary-heading">Review your answers</h1>
+    <h1 id="summary-heading" tabindex="-1">Review your answers</h1>
     <p>Here is a short summary before you submit. If you use voice, I'll read this aloud; say "yes" to submit or "back" to change something.</p>
     <dl class="summary-list" id="summary-list"></dl>
     <div class="btn-row">
@@ -267,7 +267,7 @@
   <!-- DONE SCREEN -->
   <section id="screen-done" hidden aria-labelledby="done-heading">
     <div class="card">
-      <h1 id="done-heading">Thank you</h1>
+      <h1 id="done-heading" tabindex="-1">Thank you</h1>
       <p>Your responses have been recorded for this session. In a live deployment this is where answers would be sent to TransitVic Digital's research team.</p>
       <p id="done-summary-note" class="command-hints"></p>
     </div>
