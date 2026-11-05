@@ -153,52 +153,9 @@
   }
 
   // ---------------------------------------------------------------
-  // Transcript parsing helpers
+  // Transcript parsing helpers (voice-parsing.js)
   // ---------------------------------------------------------------
-  const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
-
-  function wordsToNumber(t) {
-    for (const word in NUMBER_WORDS) {
-      if (new RegExp("\\b" + word + "\\b").test(t)) return NUMBER_WORDS[word];
-    }
-    const m = t.match(/\b([1-8])\b/);
-    if (m) return parseInt(m[1], 10);
-    return null;
-  }
-
-  function matchOption(transcript, options) {
-    const t = transcript.toLowerCase().trim();
-    const num = wordsToNumber(t);
-    if (num && options[num - 1]) return options[num - 1];
-    let best = null, bestScore = 0;
-    options.forEach((opt) => {
-      const optLower = opt.toLowerCase();
-      if (t.includes(optLower) || optLower.includes(t)) {
-        const score = optLower.length;
-        if (score > bestScore) { bestScore = score; best = opt; }
-      } else {
-        const tTokens = new Set(t.split(/\s+/).filter((w) => w.length > 2));
-        const oTokens = optLower.split(/\s+/).filter((w) => w.length > 2);
-        const overlap = oTokens.filter((w) => tTokens.has(w)).length;
-        if (overlap > 0 && overlap > bestScore) { bestScore = overlap; best = opt; }
-      }
-    });
-    return best;
-  }
-
-  function isAffirmative(t) { return /\b(yes|yeah|yep|correct|right|confirm|sure)\b/i.test(t); }
-  function isNegative(t) { return /\b(no|nope|wrong|incorrect)\b/i.test(t); }
-
-  function globalCommand(t) {
-    const s = t.toLowerCase();
-    if (/\brepeat\b/.test(s)) return "repeat";
-    if (/\bback\b/.test(s)) return "back";
-    if (/\bfaster\b/.test(s)) return "faster";
-    if (/\bslower\b/.test(s)) return "slower";
-    if (/\bpause\b/.test(s)) return "pause";
-    if (/\bdone\b|\bfinished\b|that.?s all/.test(s)) return "done";
-    return null;
-  }
+  const { matchOption, isAffirmative, isNegative, globalCommand, isBlank, activeAnswers } = window.VoiceParsing;
 
   // ---------------------------------------------------------------
   // Navigation / branching
@@ -385,11 +342,21 @@
 
   function handleTranscript(transcript) {
     const q = currentQuestion();
-    const cmd = globalCommand(transcript);
+    // While dictating a free-text answer, only an utterance that is nothing
+    // but a command counts as one, so answers can contain words like "back".
+    const freeText = state.phase === "listening" && q.type === "open";
+    const cmd = globalCommand(transcript, { whole: freeText });
 
     // Global commands work in every phase.
     if (cmd === "repeat") { askQuestionByVoice(); return; }
-    if (cmd === "back") { goBack(); return; }
+    if (cmd === "back") {
+      if (state.index === 0) {
+        speak("This is the first question, so there's nothing to go back to.", () => askQuestionByVoice());
+        return;
+      }
+      goBack();
+      return;
+    }
     if (cmd === "pause") {
       state.voiceEnabled = false;
       state.phase = "idle";
@@ -512,7 +479,7 @@
     state.order.forEach((id) => {
       const q = SURVEY.find((sq) => sq.id === id);
       const val = state.answers[id];
-      if (val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0)) return;
+      if (isBlank(val)) return;
       const dt = document.createElement("dt");
       dt.textContent = q.prompt;
       const dd = document.createElement("dd");
@@ -546,12 +513,16 @@
   function finalSubmit() {
     window.speechSynthesis && window.speechSynthesis.cancel();
     if (state.recognizer) { try { state.recognizer.abort(); } catch (e) {} }
+    // Drop answers to questions that a later branching change made irrelevant,
+    // and blanks, so what is stored matches the summary the person confirmed.
+    recomputeOrder();
+    const response = activeAnswers(state.answers, state.order);
     try {
-      localStorage.setItem("accessgo_survey_response_demo", JSON.stringify(state.answers));
+      localStorage.setItem("accessgo_survey_response_demo", JSON.stringify(response));
     } catch (e) { /* storage unavailable; not essential for the demo */ }
     screenSummary.hidden = true;
     screenDone.hidden = false;
-    $("done-summary-note").textContent = "Answered " + Object.keys(state.answers).length + " questions in this session.";
+    $("done-summary-note").textContent = "Answered " + Object.keys(response).length + " questions in this session.";
     if (state.voiceEnabled) speak("Thank you. Your responses have been recorded for this session.");
   }
 
