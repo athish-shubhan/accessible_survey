@@ -22,7 +22,9 @@ Every question is *also* answerable through ordinary, fully accessible form cont
    - **"faster" / "slower"** — adjust how quickly questions are read
    - **"pause"** — stop listening and switch to the form
    - **"yes" / "no"** — confirm or reject what was heard
-   - a number ("one", "two"...) or the option's own words, to answer multiple-choice questions
+   - a number ("one", "option two"...) or the option's own words, to answer multiple-choice questions
+
+   In a free-text answer, these words only count as commands when said on their own, so an answer like "staff at the back of the platform" is kept as an answer.
 4. A short, distinct tone plays at the start of each new section, so there's a sense of structure without extra spoken narration every time.
 5. Before submitting, a summary of all answers is read back, with an explicit "say yes to submit" confirmation required.
 
@@ -65,12 +67,24 @@ Findings that shaped this build:
 ## Project structure
 
 ```
-index.html       — page structure, all screens (intro, survey, summary, done)
+index.html        — page structure, all screens (intro, survey, summary, done)
 survey-data.js    — the 16 questions, their type, options, and branching conditions
-app.js            — speech synthesis/recognition, state machine, voice commands, fallback rendering
+voice-parsing.js  — turns a transcript into an option or a voice command (pure functions, unit tested)
+app.js            — speech synthesis/recognition, state machine, fallback rendering
+test/             — Node unit tests for voice-parsing.js and the branching in survey-data.js
 ```
 
-No build step, no dependencies, no backend. Answers exist only in the browser tab for the session (optionally mirrored to `localStorage` under the key `accessgo_survey_response_demo` for demo persistence); nothing is transmitted anywhere.
+No build step, no runtime dependencies, no backend. Answers exist only in the browser tab for the session (optionally mirrored to `localStorage` under the key `accessgo_survey_response_demo` for demo persistence); nothing is transmitted anywhere.
+
+## Running the tests
+
+Needs Node.js 20 or later. There's nothing to install.
+
+```bash
+npm test
+```
+
+The tests check that every option of every question can be selected by saying its own words or its number. They also cover a set of known-tricky phrases ("no" vs "Prefer not to say", "agree" vs "disagree", "one to two days a week" vs option one), voice commands inside free-text answers, and the Q7→Q8 and Q13→Q14/Q15 branching. CI runs them on every pull request.
 
 ## Limitations
 

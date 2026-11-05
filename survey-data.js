@@ -210,3 +210,8 @@ const SURVEY = [
 function getActiveQuestions(answers) {
   return SURVEY.filter(q => !q.condition || q.condition(answers));
 }
+
+// Allow the data and branching to be loaded by the Node tests in test/.
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { SURVEY, getActiveQuestions };
+}

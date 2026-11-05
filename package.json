@@ -1,0 +1,8 @@
+{
+  "name": "accessible-survey",
+  "private": true,
+  "description": "Voice-piloted, screen-reader-friendly AccessGo survey",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}
