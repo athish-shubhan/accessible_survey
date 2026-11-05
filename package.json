@@ -3,6 +3,11 @@
   "private": true,
   "description": "Voice-piloted, screen-reader-friendly AccessGo survey",
   "scripts": {
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "test:e2e": "node --test \"e2e/*.test.js\""
+  },
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "playwright": "1.63.0"
   }
 }

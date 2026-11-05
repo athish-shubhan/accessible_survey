@@ -74,7 +74,16 @@
 
   function announce(text) {
     // Screen-reader-only live region for state changes that aren't spoken aloud.
-    assertiveAnnouncer.textContent = text;
+    // Clear first so the same message is announced again if it repeats.
+    assertiveAnnouncer.textContent = "";
+    setTimeout(() => { assertiveAnnouncer.textContent = text; }, 50);
+  }
+
+  // Move keyboard / screen-reader focus to newly shown content. Without this,
+  // focus stays on a button that was just hidden (and falls back to <body>), or
+  // on "Continue", so nothing tells a screen-reader user the question changed.
+  function moveFocus(el) {
+    if (el) el.focus({ preventScroll: false });
   }
 
   // ---------------------------------------------------------------
@@ -285,6 +294,7 @@
     }
 
     $("btn-prev").disabled = state.index === 0;
+    moveFocus(questionText);
 
     if (state.voiceEnabled) {
       askQuestionByVoice();
@@ -472,6 +482,7 @@
     if (state.recognizer) { try { state.recognizer.abort(); } catch (e) {} }
     screenSurvey.hidden = true;
     screenSummary.hidden = false;
+    moveFocus($("summary-heading"));
 
     const list = $("summary-list");
     list.innerHTML = "";
@@ -522,6 +533,7 @@
     } catch (e) { /* storage unavailable; not essential for the demo */ }
     screenSummary.hidden = true;
     screenDone.hidden = false;
+    moveFocus($("done-heading"));
     $("done-summary-note").textContent = "Answered " + Object.keys(response).length + " questions in this session.";
     if (state.voiceEnabled) speak("Thank you. Your responses have been recorded for this session.");
   }
@@ -570,8 +582,9 @@
     e.preventDefault();
     const q = currentQuestion();
     const value = readManualAnswerFromDOM(q);
-    if (q.required && (value === null || value === "" || (Array.isArray(value) && value.length === 0))) {
+    if (q.required && isBlank(value)) {
       announce("This question needs an answer before continuing.");
+      moveFocus(questionBody.querySelector("input, textarea"));
       return;
     }
     state.answers[q.id] = value;

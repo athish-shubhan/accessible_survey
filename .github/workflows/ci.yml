@@ -17,3 +17,16 @@ jobs:
         run: for f in app.js voice-parsing.js survey-data.js; do node --check "$f"; done
       - name: Unit tests
         run: npm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Accessibility, focus, form and voice checks in Chromium
+        run: npm run test:e2e

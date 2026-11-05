@@ -44,3 +44,44 @@ I also ran a browser check in headless Chromium (Playwright, script not committe
 
 ### Files touched
 `app.js`, `voice-parsing.js` (new), `survey-data.js` (Node export only), `index.html` (one script tag), `package.json` (new, test script only), `test/` (new), `.github/workflows/ci.yml` (new), `README.md`, `IMPROVEMENTS.md` (new).
+
+## Round 2 — 2026-11-05
+
+### What changed
+1. **Bug: keyboard and screen-reader focus was lost between steps.** Nothing in `app.js` moved focus, which I checked in Chromium:
+   - "Start without voice" / "Start with voice" hid the button that had focus, so focus fell back to `<body>`.
+   - "Continue" left focus on the Continue button. The status live region was given the same text again, so a screen reader announced nothing about the new question.
+   - The last "Continue" (into the summary) and "Submit" also left focus on hidden buttons.
+
+   Focus now moves to the new question's text (`tabindex="-1"`), to the first option when a required question is left blank, and to the summary and thank-you headings.
+2. **Repeated announcements.** `announce()` set the live region to the same string each time, and many screen readers don't re-read unchanged text. A second blank submit was therefore silent. The region is now cleared before each announcement.
+3. **End-to-end tests (`e2e/`, 5 tests, `npm run test:e2e`).** These run in headless Chromium. axe-core checks all six screens (intro, single, multi, open, summary, done). Other tests cover focus at each step, the form path with a Q7 branching change (exact stored response and count), and the voice path with speech stubbed: "no" is heard as No, "yes" advances, "back" on Q1 re-asks. `playwright` and `axe-core` are devDependencies only; the page still has no runtime dependencies. CI has a new `e2e` job.
+4. **README.** Added the focus behaviour to "Accessibility decisions" and documented how to run the e2e tests.
+
+### Why it matters
+The README promises a screen-reader-friendly fallback path. Before this change, a screen-reader user pressing Continue had no indication that anything happened, and a keyboard user had to find their way back from the top of the page after every screen change.
+
+### How it was verified
+Focus trace (Playwright, keyboard `Enter` on each button):
+
+| Step | round 1 | round 2 |
+|---|---|---|
+| Start without voice | `<body>` (focus lost) | `p#question-text` "Do you have low vision…" |
+| Continue Q1 → Q2 | `button#btn-next` | `p#question-text` "Do you use a screen reader…" |
+| Continue on required Q2, blank | `button#btn-next` | `input#Q2-opt0` |
+| Arrive on summary | `<body>` (focus lost) | `h1#summary-heading` |
+| Submit | `button#btn-submit-final` (hidden) | `h1#done-heading` |
+
+```
+$ npm run test:e2e
+# tests 5   # pass 5   # fail 0
+# with round-1 app.js + index.html: # pass 4   # fail 1   (keyboard focus test)
+$ npm test
+# tests 137   # pass 137   # fail 0
+```
+axe-core 4.10.2 reported 0 violations on every screen both before and after this change, so focus handling was the gap automated scanning doesn't catch.
+
+**Not verified:** behaviour with real screen readers (VoiceOver, TalkBack, NVDA). In voice mode, a screen reader may now read the focused question while speech synthesis also reads it. The existing `role="status"` voice panel already read "Asking: …" aloud in the same way, but I couldn't test how the overlap sounds in practice.
+
+### Files touched
+`app.js`, `index.html`, `package.json`, `package-lock.json` (new), `.gitignore` (new), `e2e/survey.e2e.test.js` (new), `.github/workflows/ci.yml`, `README.md`, `IMPROVEMENTS.md`.
