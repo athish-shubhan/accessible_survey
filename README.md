@@ -6,6 +6,10 @@ A voice-piloted, screen-reader-friendly implementation of the AccessGo requireme
 
 This is a companion demonstration artifact for the AccessGo assignment. It exists to show the accessibility-first design decisions described in the written justification, not as a production data-collection tool.
 
+![Voice path demo](docs/voice-demo.gif)
+
+*The voice path, recorded in headless Chromium by `node e2e/record-demo.js`. A GIF has no sound, so the bar at the bottom shows what the page says aloud and what the user says; the speech API is scripted the same way as in the end-to-end tests. Everything above the bar is the real page.*
+
 ## What it does
 
 The entire 16-question survey can be completed by voice alone: every question is spoken aloud, the response is listened for, and what was heard is always played back for confirmation before moving on. Nobody has to find, read, or tap anything to finish the survey this way.
